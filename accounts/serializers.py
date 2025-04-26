@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from .models import Profile, UserProfile, Album, AlbumImage
 
-
 class ProfileSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    about_me = serializers.SerializerMethodField()
+    skills = serializers.SerializerMethodField()
+    member_since = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
@@ -15,7 +17,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             'contact_number',
             'image_url', 
             'image', 
-            'last_seen']  # Add more fields as needed
+            'last_seen',
+            'about_me',
+            'skills',
+            'member_since',
+        ]  # Add more fields as needed
 
     def get_image_url(self, obj):
         request = self.context.get('request', None)
@@ -24,6 +30,17 @@ class ProfileSerializer(serializers.ModelSerializer):
         elif obj.image:
             return obj.image.url  # fallback if request is None
         return None
+    
+    def get_about_me(self, obj):
+        user_profile = UserProfile.objects.filter(user=obj.user).first()
+        return user_profile.about_me if user_profile else "No details provided"
+
+    def get_skills(self, obj):
+        user_profile = UserProfile.objects.filter(user=obj.user).first()
+        return user_profile.expertise if user_profile else []
+
+    def get_member_since(self, obj):
+        return obj.user.date_joined.strftime("%B %Y")
 
     # def get_image_url(self, obj):
     #     request = self.context.get('request')
