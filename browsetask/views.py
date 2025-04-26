@@ -31,10 +31,20 @@ class PostListView(APIView):
         return Response(serializer.data)
     
     def post(self, request):
-        serializer = PostSerializer(data=request.data)
+        data = request.data.copy()
+        image_file = request.FILES.get("image")  # ✅ Retrieve image from request.FILES
+
+        serializer = PostSerializer(data=data)
+
         if serializer.is_valid():
-            serializer.save(author=request.user)
-            return Response(serializer.data, status=201)
+            post = serializer.save(author=request.user)  # ✅ Save post first
+
+            if image_file:
+                post.image = image_file  # ✅ Assign image separately
+                post.save()  # ✅ Save post again with image
+            
+            return Response(PostSerializer(post, context={'request': request}).data, status=201)
+
         return Response(serializer.errors, status=400)
 
 class PublicPostListView(ListAPIView):
@@ -44,13 +54,3 @@ class PublicPostListView(ListAPIView):
 
     def get_serializer_context(self):
         return {'request': self.request}
-
-
-# Alternative
-# class PostListView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def get(self, request):
-#         posts = Post.objects.all().order_by('-created_at')
-#         serializer = PostSerializer(posts, many=True, context={'request': request})
-#         return Response(serializer.data)

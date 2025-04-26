@@ -6,6 +6,7 @@ from sorl.thumbnail import ImageField
 
 from django.utils.timezone import now
 
+# User personal information model
 class Profile(models.Model):
     user = models.OneToOneField(
         User,
@@ -37,5 +38,31 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
+
+# User personal details model
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    about_me = models.TextField(blank=True)
+    expertise = models.JSONField(default=list)  # Storing as a list
+    task_preferences = models.JSONField(default=list)  # Checkboxes
+
+    def __str__(self):
+        return self.user.username
+
+# User portfolio model
+class Album(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="albums")
+    title = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+class AlbumImage(models.Model):
+    album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="portfolio_images/")
+    description = models.TextField(blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
 
 

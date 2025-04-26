@@ -19,7 +19,6 @@ from django.urls import path, re_path
 
 from django.conf.urls import include
 from browsetask import urls as browsetask_urls
-
 from accounts import urls as accounts_urls
 
 from django.conf import settings
@@ -29,6 +28,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include(browsetask_urls, namespace="browsetask")),
     path("", include(accounts_urls, namespace="accounts")),
+    path("api/", include("accounts.urls")),
 
     re_path("", include("allauth.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) # This is good for development but not in production since you don't want to serve your media files through django in production that is not safe.

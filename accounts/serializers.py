@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Profile
+from .models import Profile, UserProfile, Album, AlbumImage
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -35,3 +36,22 @@ class ProfileSerializer(serializers.ModelSerializer):
 #   "image": "profiles/me.jpg",
 #   "image_url": "http://127.0.0.1:8000/media/profiles/me.jpg"
 # }
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'user', 'about_me', 'expertise', 'task_preferences']
+        read_only_fields = ['user']  # ✅ So you don’t need to send `user` manually
+
+class AlbumImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AlbumImage
+        fields = ['id', 'image', 'description', 'uploaded_at']
+
+class AlbumSerializer(serializers.ModelSerializer):
+    images = AlbumImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Album
+        fields = ['id', 'title', 'created_at', 'images']

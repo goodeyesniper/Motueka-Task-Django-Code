@@ -22,12 +22,6 @@ class PostSerializer(serializers.ModelSerializer):
 
         # fields = '__all__' # This is an alternative, try this out next time.
     
-    # def get_author_profile(self, obj):
-    #     request = self.context.get('request')
-    #     if hasattr(obj.author, 'profile'):
-    #         return ProfileSerializer(obj.author.profile, context={'request': request}).data
-    #     return None
-    
     def get_author_profile(self, obj):
         request = self.context.get('request')
         try:
@@ -38,9 +32,20 @@ class PostSerializer(serializers.ModelSerializer):
         
     def get_image(self, obj):
         request = self.context.get('request')
+        
         if obj.image and hasattr(obj.image, 'url'):
-            return request.build_absolute_uri(obj.image.url)
+            if request:  # ✅ Ensure request exists
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url  # ✅ Return relative URL if request is missing
+        
         return None
+        
+    # def get_image(self, obj):
+    #     request = self.context.get('request')
+    #     if obj.image and hasattr(obj.image, 'url'):
+    #         print("Image URL:", obj.image.url)
+    #         return request.build_absolute_uri(obj.image.url)
+    #     return None
 
     
     # Uncomment this too when ready

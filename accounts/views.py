@@ -5,11 +5,10 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
-from .serializers import ProfileSerializer
+from .serializers import ProfileSerializer, UserProfileSerializer, AlbumSerializer, AlbumImageSerializer
 
 from django.utils.timezone import now
 from django.contrib.auth.hashers import make_password
-from .models import Profile
 
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
@@ -18,6 +17,8 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth import update_session_auth_hash
 
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import viewsets, permissions
+from .models import Profile, UserProfile, Album, AlbumImage
 
 
 class RegisterView(APIView):
@@ -86,6 +87,21 @@ class UserProfileView(APIView):
 
         serializer = ProfileSerializer(profile, context={'request': request})
         return Response(serializer.data)
+    
+class UserProfileViewSet(viewsets.ModelViewSet):
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = UserProfile.objects.all()  # 🔥 Add this line!
+
+    def get_queryset(self):
+        return UserProfile.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
+
     
 # This is the key part: serializer = ProfileSerializer(profile, context={'request': request})
 # If you skip the context={'request': request}, Django can’t build the full image URL (it only gives you /media/profiles/me.jpg, not the full path like http://127.0.0.1:8000/media/...).
@@ -199,3 +215,30 @@ class ChangePasswordView(APIView):
 #         user.save()
 
 #         return Response({"message": "Password changed successfully!"})
+
+class AlbumViewSet(viewsets.ModelViewSet):
+    serializer_class = AlbumSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Album.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class AlbumImageViewSet(viewsets.ModelViewSet):
+    serializer_class = AlbumImageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_queryset(self):
+        album_id = self.request.query_params.get("album")
+        queryset = AlbumImage.objects.filter(album__user=self.request.user)
+        if album_id:
+            queryset = queryset.filter(album__id=album_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        album_id = self.request.data.get('album')
+        album = Album.objects.get(id=album_id, user=self.request.user)
+        serializer.save(album=album)
