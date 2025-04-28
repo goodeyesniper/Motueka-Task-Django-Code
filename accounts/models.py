@@ -17,7 +17,7 @@ class Profile(models.Model):
     last_seen = models.DateTimeField(default=now)
 
     full_name = models.CharField(max_length=255, default="Anonymous")
-    email = models.EmailField(null=True, blank=True)
+    email = models.EmailField(null=True, blank=False)
     date_of_birth = models.DateField(blank=True, null=True, default="2000-01-01")  # Default to a generic DOB
     address = models.TextField(blank=True, null=True, default="Not provided")
     contact_number = models.CharField(max_length=10, blank=True, null=True, default="027-339-6384")
@@ -33,7 +33,7 @@ class Profile(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     """ Create a new Profile() object when a django user is created."""
     if created:
-         Profile.objects.create(user=instance)
+         Profile.objects.create(user=instance, email=instance.email)
         
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):

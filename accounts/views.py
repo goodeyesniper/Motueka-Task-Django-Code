@@ -18,33 +18,71 @@ from django.contrib.auth import update_session_auth_hash
 
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, permissions
-from .models import Profile, UserProfile, Album, AlbumImage
+from .models import Profile, UserProfile, Album, AlbumImage, Review, Profile
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-# from django.contrib.auth.models import User
 from .models import Review, Profile
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status
+from django.contrib.auth.models import User
 
 
-@csrf_exempt
-def submit_review(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        reviewer = request.user  # Assuming user is authenticated
-        profile = Profile.objects.get(user__username=data["username"])
-        rating = data["rating"]
-        comment = data["comment"]
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_current_user(request):
+    return Response({
+        'username': request.user.username,
+        # 'full_name': request.user.get_full_name(),
+        # 'email': request.user.email,
+        # 'profile_picture': request.user.profile.picture.url if hasattr(request.user, 'profile') else None,
+    })
 
-        review = Review.objects.create(reviewer=reviewer, profile=profile, rating=rating, comment=comment)
-        return JsonResponse({"message": "Review submitted successfully!"})
 
+class SubmitReviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        reviewer = request.user  # ✅ Logged-in user from token
+        username = request.data.get("username")
+        rating = request.data.get("rating")
+        comment = request.data.get("comment")
+
+        if not username or not rating or comment is None:
+            return Response({"error": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            profile = Profile.objects.get(user__username=username)
+        except Profile.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        Review.objects.create(
+            reviewer=reviewer,
+            profile=profile,
+            rating=rating,
+            comment=comment
+        )
+
+        return Response({"message": "Review submitted successfully!"}, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def get_reviews(request, username):
-    profile = Profile.objects.get(user__username=username)
-    reviews = profile.reviews.all()
-    data = [{"reviewer": review.reviewer.username, "rating": review.rating, "comment": review.comment, "created_at": review.created_at} for review in reviews]
-    return JsonResponse(data, safe=False)
+    try:
+        profile = Profile.objects.get(user__username=username)
+    except Profile.DoesNotExist:
+        return Response({"error": "User not found."}, status=404)
 
+    reviews = profile.reviews.all()
+    data = [
+        {
+            "reviewer": review.reviewer.username,
+            "rating": review.rating,
+            "comment": review.comment,
+            "created_at": review.created_at
+        }
+        for review in reviews
+    ]
+    return Response(data)
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -69,17 +107,22 @@ class RegisterView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({"error": "Email already registered."}, status=400)
 
-        # Create user with hashed password
-        user = User.objects.create(
-            username=username,
-            email=email,
-            password=make_password(password)  # Hash password before saving
-        )
+        try:
+            # ✅ Create user only! The profile will be created by the signal.
+            user = User.objects.create(
+                username=username,
+                email=email,
+                password=make_password(password)
+            )
 
-        # Generate authentication token
-        token, _ = Token.objects.get_or_create(user=user)
+            # ✅ Generate authentication token
+            token, _ = Token.objects.get_or_create(user=user)
 
-        return Response({"message": "Registration successful!", "token": token.key}, status=201)
+            return Response({"message": "Registration successful!", "token": token.key}, status=201)
+
+        except Exception as e:
+            print("Error during registration:", e)  # 🔥 Debug log
+            return Response({"error": "Internal Server Error"}, status=500)
 
 class LoginView(APIView):
     permission_classes = [AllowAny]  # Allow anyone to access the login API
@@ -242,10 +285,24 @@ class AlbumViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Album.objects.filter(user=self.request.user)
+        user_param = self.request.query_params.get('user')
+
+        if user_param:
+            # Import the User model if not already imported
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            try:
+                user = User.objects.get(username=user_param)
+                return Album.objects.filter(user=user)
+            except User.DoesNotExist:
+                return Album.objects.none()  # No albums if user not found
+        else:
+            return Album.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
 
 class AlbumImageViewSet(viewsets.ModelViewSet):
     serializer_class = AlbumImageSerializer

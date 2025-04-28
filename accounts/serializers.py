@@ -6,6 +6,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     about_me = serializers.SerializerMethodField()
     skills = serializers.SerializerMethodField()
     member_since = serializers.SerializerMethodField()
+    username = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = Profile
@@ -22,6 +23,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'about_me',
             'skills',
             'member_since',
+            'username',
         ]  # Add more fields as needed
 
     def get_image_url(self, obj):
