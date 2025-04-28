@@ -64,5 +64,16 @@ class AlbumImage(models.Model):
     description = models.TextField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+class Review(models.Model):
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE)
+    profile = models.ForeignKey("Profile", on_delete=models.CASCADE, related_name="reviews")
+    rating = models.IntegerField(default=0)  # Example: rating from 1 to 5
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Review by {self.reviewer} for {self.profile.user.username}"
+
+
 
 

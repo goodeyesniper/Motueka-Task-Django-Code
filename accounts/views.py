@@ -20,6 +20,31 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, permissions
 from .models import Profile, UserProfile, Album, AlbumImage
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+# from django.contrib.auth.models import User
+from .models import Review, Profile
+
+
+@csrf_exempt
+def submit_review(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        reviewer = request.user  # Assuming user is authenticated
+        profile = Profile.objects.get(user__username=data["username"])
+        rating = data["rating"]
+        comment = data["comment"]
+
+        review = Review.objects.create(reviewer=reviewer, profile=profile, rating=rating, comment=comment)
+        return JsonResponse({"message": "Review submitted successfully!"})
+
+def get_reviews(request, username):
+    profile = Profile.objects.get(user__username=username)
+    reviews = profile.reviews.all()
+    data = [{"reviewer": review.reviewer.username, "rating": review.rating, "comment": review.comment, "created_at": review.created_at} for review in reviews]
+    return JsonResponse(data, safe=False)
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -91,7 +116,7 @@ class UserProfileView(APIView):
 class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
-    queryset = UserProfile.objects.all()  # 🔥 Add this line!
+    queryset = UserProfile.objects.all()
 
     def get_queryset(self):
         return UserProfile.objects.filter(user=self.request.user)
@@ -101,6 +126,19 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)
+
+class PublicUserProfileView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, username):
+        try:
+            user = User.objects.get(username=username)
+            profile = user.profile
+            serializer = ProfileSerializer(profile, context={'request': request})
+            return Response(serializer.data)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=404)
+
 
     
 # This is the key part: serializer = ProfileSerializer(profile, context={'request': request})
@@ -198,23 +236,6 @@ class ChangePasswordView(APIView):
         update_session_auth_hash(request, user)
 
         return Response({"message": "Password updated successfully!"})
-
-
-# class ChangePasswordView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         user = request.user
-#         current_password = request.data.get("current_password")
-#         new_password = request.data.get("new_password")
-
-#         if not user.check_password(current_password):
-#             return Response({"error": "Current password is incorrect"}, status=400)
-
-#         user.password = make_password(new_password)
-#         user.save()
-
-#         return Response({"message": "Password changed successfully!"})
 
 class AlbumViewSet(viewsets.ModelViewSet):
     serializer_class = AlbumSerializer

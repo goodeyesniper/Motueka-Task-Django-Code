@@ -10,6 +10,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = [
+            'id',
             'full_name', 
             'email', 
             'date_of_birth',
@@ -41,19 +42,6 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_member_since(self, obj):
         return obj.user.date_joined.strftime("%B %Y")
-
-    # def get_image_url(self, obj):
-    #     request = self.context.get('request')
-    #     if obj.image and hasattr(obj.image, 'url'):
-    #         return request.build_absolute_uri(obj.image.url)
-    #     return None
-
-## Note: class ProfileSerializer will return something like
-# {
-#   "image": "profiles/me.jpg",
-#   "image_url": "http://127.0.0.1:8000/media/profiles/me.jpg"
-# }
-
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
