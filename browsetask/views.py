@@ -46,6 +46,33 @@ class PostListView(APIView):
             return Response(PostSerializer(post, context={'request': request}).data, status=201)
 
         return Response(serializer.errors, status=400)
+    
+    def patch(self, request, pk):
+        try:
+            post = Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found"}, status=404)
+
+        serializer = PostSerializer(post, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=400)
+    
+    def delete(self, request, pk):
+        try:
+            post = Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found"}, status=404)
+
+        # Optional: check if the user is the author
+        if post.author != request.user:
+            return Response({"error": "You do not have permission to delete this post."}, status=403)
+
+        post.delete()
+        return Response(status=204)
 
 class PublicPostListView(ListAPIView):
     queryset = Post.objects.all().order_by('-created_at')

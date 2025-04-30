@@ -7,5 +7,7 @@ urlpatterns = [
     path("", HomePage.as_view(), name="index"),
     path("<int:pk>/", PostDetailView.as_view(), name="detail"),
     path('api/posts/', PostListView.as_view(), name='post_list'),
+    path('api/posts/<int:pk>/', PostListView.as_view(), name='post_update'),  # ✅ Added endpoint for updating posts
     path('api/public-posts/', PublicPostListView.as_view(), name='public_post_list'),
+    
 ]

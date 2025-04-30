@@ -1,7 +1,11 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import LoginView, LogoutView, UserProfileView, RegisterView, ForgotPasswordView, UpdateProfileView, ChangePasswordView, UploadProfileImageView, UserProfileViewSet, AlbumViewSet, AlbumImageViewSet, PublicUserProfileView, SubmitReviewView, get_reviews, get_current_user
 
+from .views import (AlbumImageViewSet, AlbumViewSet, ChangePasswordView,
+                    ForgotPasswordView, LoginView, LogoutView,
+                    PublicUserProfileView, RegisterView, SubmitReviewView,
+                    UpdateProfileView, UploadProfileImageView, UserProfileView,
+                    UserProfileViewSet, get_current_user, get_reviews)
 
 app_name = "accounts"
 

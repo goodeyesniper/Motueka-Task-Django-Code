@@ -1,29 +1,22 @@
-from rest_framework.permissions import AllowAny
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
-from .serializers import ProfileSerializer, UserProfileSerializer, AlbumSerializer, AlbumImageSerializer
-
-from django.utils.timezone import now
+from django.contrib.auth import authenticate, update_session_auth_hash
 from django.contrib.auth.hashers import make_password
-
-from django.core.mail import send_mail
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.contrib.auth import update_session_auth_hash
-
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework import viewsets, permissions
-from .models import Profile, UserProfile, Album, AlbumImage, Review, Profile
-
-from .models import Review, Profile
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework import status
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.utils.timezone import now
+from rest_framework import permissions, status, viewsets
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import Album, AlbumImage, Profile, Review, UserProfile
+from .serializers import (AlbumImageSerializer, AlbumSerializer,
+                          ProfileSerializer, UserProfileSerializer)
 
 
 @api_view(['GET'])

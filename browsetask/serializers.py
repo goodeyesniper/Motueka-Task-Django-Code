@@ -16,7 +16,10 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = [
             'id', 'task_title', 'task_details', 'image', 'address', 
-            'date', 'time_from', 'time_to', 'budget_option', 'budget_value', 'created_at', 'author_profile', 'author_username'
+            'date', 'time_from', 'time_to', 'budget_option', 'budget_value',
+            'created_at', 'status',
+            
+            'author_profile', 'author_username'
             # 'author_full_name',  # ← Uncomment this when ready
         ]
 
