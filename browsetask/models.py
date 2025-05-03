@@ -35,3 +35,14 @@ class Post(models.Model):
 
     def __str__(self):
         return self.task_title[:100]  # Truncating the first 100 characters
+
+
+class Offer(models.Model):
+    post = models.ForeignKey(Post, related_name='offers', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} offered on {self.post.task_title}"
+

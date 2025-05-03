@@ -1,13 +1,23 @@
 from rest_framework import serializers
-from .models import Post
+from .models import Post, Offer
 from accounts.serializers import ProfileSerializer
 from accounts.models import Profile
+from django.contrib.auth.models import User
 
+
+class OfferSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Offer
+        fields = ['id', 'user', 'message', 'created_at']
+        
 
 class PostSerializer(serializers.ModelSerializer):
     author_profile = serializers.SerializerMethodField()
     author_username = serializers.CharField(source='author.username', read_only=True)  # ✅ Add this
     image = serializers.SerializerMethodField()
+    offers = OfferSerializer(many=True, read_only=True)  # ✅ Add this line
 
     # Uncomment this in the future if you want full name
     # author_full_name = serializers.SerializerMethodField()
@@ -19,7 +29,9 @@ class PostSerializer(serializers.ModelSerializer):
             'date', 'time_from', 'time_to', 'budget_option', 'budget_value',
             'created_at', 'status',
             
-            'author_profile', 'author_username'
+            'author_profile', 'author_username',
+            'offers'  # ✅ Add this
+
             # 'author_full_name',  # ← Uncomment this when ready
         ]
 
@@ -42,6 +54,7 @@ class PostSerializer(serializers.ModelSerializer):
             return obj.image.url  # ✅ Return relative URL if request is missing
         
         return None
+
         
     # def get_image(self, obj):
     #     request = self.context.get('request')
