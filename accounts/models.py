@@ -16,11 +16,11 @@ class Profile(models.Model):
     image = ImageField(upload_to='profiles', blank=True, null=True) # blank=True, null=True OR default='profiles/default.jpg'
     last_seen = models.DateTimeField(default=now)
 
-    full_name = models.CharField(max_length=255, default="Anonymous")
+    full_name = models.CharField(max_length=100, default="Anonymous")
     email = models.EmailField(null=True, blank=False)
     date_of_birth = models.DateField(blank=True, null=True, default="2000-01-01")  # Default to a generic DOB
     address = models.TextField(blank=True, null=True, default="Not provided")
-    contact_number = models.CharField(max_length=10, blank=True, null=True, default="027-339-6384")
+    contact_number = models.CharField(max_length=10, blank=True, null=True, default="1234567890")
 
     def update_last_seen(self):
         self.last_seen = now()

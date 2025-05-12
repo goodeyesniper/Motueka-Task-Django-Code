@@ -33,6 +33,14 @@ class Post(models.Model):
         default=1  # CHANGE THIS LATER
     )
 
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_posts'
+    )
+
     def __str__(self):
         return self.task_title[:100]  # Truncating the first 100 characters
 
@@ -43,6 +51,10 @@ class Offer(models.Model):
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # def __str__(self):
+    #     return f"{self.user.username} offered on {self.post.task_title}"
+    
     def __str__(self):
-        return f"{self.user.username} offered on {self.post.task_title}"
+        return f"{self.user.profile.full_name} ({self.user.username}) offered on {self.post.task_title}"
+
 

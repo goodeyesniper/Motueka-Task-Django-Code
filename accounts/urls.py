@@ -4,8 +4,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (AlbumImageViewSet, AlbumViewSet, ChangePasswordView,
                     ForgotPasswordView, LoginView, LogoutView,
                     PublicUserProfileView, RegisterView, SubmitReviewView,
-                    UpdateProfileView, UploadProfileImageView, UserProfileView,
-                    UserProfileViewSet, get_current_user, get_reviews)
+                    UserProfileView, UserProfileViewSet, 
+                    get_current_user, get_reviews)
 
 app_name = "accounts"
 
@@ -15,20 +15,20 @@ router.register(r'albums', AlbumViewSet, basename='albums')
 router.register(r'album-images', AlbumImageViewSet, basename='album-images')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
-    path('api/login/', LoginView.as_view(), name='api_login'),
-    path('api/logout/', LogoutView.as_view(), name='api_logout'),
-    path('api/profile/', UserProfileView.as_view(), name='api_profile'),
-    path('api/register/', RegisterView.as_view(), name='api_register'),
-    path("api/forgot-password/", ForgotPasswordView.as_view(), name="api_forgot_password"),
-    path('api/profile/update/', UpdateProfileView.as_view(), name='api_profile_update'),
-    path("api/password/change/", ChangePasswordView.as_view(), name="api_password_change"),
-    path("api/profile/upload-image/", UploadProfileImageView.as_view(), name="api_profile_upload"),
+    path('', include(router.urls)),
+    path('login/', LoginView.as_view(), name='api_login'),
+    path('logout/', LogoutView.as_view(), name='api_logout'),
+    path('current-user/', get_current_user, name='get_current_user'),
 
-    path('api/public-user-profile/<str:username>/', PublicUserProfileView.as_view(), name='api_public_user_profile'),
-    path('api/current-user/', get_current_user, name='get_current_user'),
+    path("profile/", UserProfileView.as_view(), name="profile_get_update"),
+    path('profile/<str:username>/', UserProfileView.as_view(), name='api_profile'),
 
+    path('register/', RegisterView.as_view(), name='api_register'),
+    path("forgot-password/", ForgotPasswordView.as_view(), name="api_forgot_password"),
+
+    path("password/change/", ChangePasswordView.as_view(), name="api_password_change"),
+
+    path('public-user-profile/<str:username>/', PublicUserProfileView.as_view(), name='api_public_user_profile'),
     path('profile/review/', SubmitReviewView.as_view(), name='submit-review'),
     path("profile/<str:username>/reviews/", get_reviews, name="get_reviews"),
-
 ]

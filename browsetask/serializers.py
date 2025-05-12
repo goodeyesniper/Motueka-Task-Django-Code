@@ -7,17 +7,23 @@ from django.contrib.auth.models import User
 
 class OfferSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
+    full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Offer
-        fields = ['id', 'user', 'message', 'created_at']
-        
+        fields = ['id', 'user', 'full_name', 'message', 'created_at']
+
+    def get_full_name(self, obj):
+        return obj.user.profile.full_name if hasattr(obj.user, "profile") else "Anonymous"  # ✅ Fetch from Profile
+
 
 class PostSerializer(serializers.ModelSerializer):
     author_profile = serializers.SerializerMethodField()
     author_username = serializers.CharField(source='author.username', read_only=True)  # ✅ Add this
     image = serializers.SerializerMethodField()
     offers = OfferSerializer(many=True, read_only=True)  # ✅ Add this line
+    assigned_to = serializers.StringRelatedField(read_only=True)
+
 
     # Uncomment this in the future if you want full name
     # author_full_name = serializers.SerializerMethodField()
@@ -29,8 +35,8 @@ class PostSerializer(serializers.ModelSerializer):
             'date', 'time_from', 'time_to', 'budget_option', 'budget_value',
             'created_at', 'status',
             
-            'author_profile', 'author_username',
-            'offers'  # ✅ Add this
+            'author_profile', 'author_username', 'assigned_to',
+            'offers',  # ✅ Add this
 
             # 'author_full_name',  # ← Uncomment this when ready
         ]
@@ -54,15 +60,6 @@ class PostSerializer(serializers.ModelSerializer):
             return obj.image.url  # ✅ Return relative URL if request is missing
         
         return None
-
-        
-    # def get_image(self, obj):
-    #     request = self.context.get('request')
-    #     if obj.image and hasattr(obj.image, 'url'):
-    #         print("Image URL:", obj.image.url)
-    #         return request.build_absolute_uri(obj.image.url)
-    #     return None
-
     
     # Uncomment this too when ready
     # def get_author_full_name(self, obj):

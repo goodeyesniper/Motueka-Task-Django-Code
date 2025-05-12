@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, update_session_auth_hash
+from django.contrib.auth import authenticate, update_session_auth_hash, get_user_model
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
@@ -29,7 +29,6 @@ def get_current_user(request):
         # 'profile_picture': request.user.profile.picture.url if hasattr(request.user, 'profile') else None,
     })
 
-
 class SubmitReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -55,7 +54,6 @@ class SubmitReviewView(APIView):
         )
 
         return Response({"message": "Review submitted successfully!"}, status=status.HTTP_201_CREATED)
-
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -134,21 +132,57 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # Remove token or session if you're using token-based authentication
-        request.user.auth_token.delete()  # Deletes the user's auth token
-        return Response({"message": "Logged out successfully"}, status=200)
-    
+        try:
+            # ✅ Delete the user's token on logout
+            Token.objects.get(user=request.user).delete()
+            return Response({"message": "Logged out successfully, token removed."}, status=200)
+        except Token.DoesNotExist:
+            return Response({"message": "No token found for user."}, status=400)
+
 class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    # parser_classes = [MultiPartParser, FormParser]
 
-    def get(self, request):
+    def get(self, request, username=None):
+        try:
+            if username:
+                user = User.objects.get(username=username)
+            elif request.user.is_authenticated:
+                user = request.user
+            else:
+                return Response({"detail": "User not authenticated"}, status=400)
+
+            profile = user.profile
+            if request.user == user:  # Update last_seen only for self
+                profile.last_seen = now()
+                profile.save()
+
+            serializer = ProfileSerializer(profile, context={'request': request})
+            return Response(serializer.data)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=404)
+        
+
+    def put(self, request):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
         profile = request.user.profile
-        profile.last_seen = now()
-        profile.save()
+        serializer = ProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
 
-        serializer = ProfileSerializer(profile, context={'request': request})
-        return Response(serializer.data)
-    
+        if serializer.is_valid():
+            serializer.save()
+
+            # 🔄 Also update User.email if provided
+            new_email = request.data.get("email")
+            if new_email:
+                request.user.email = new_email
+                request.user.save()
+
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -163,6 +197,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)
 
+
+
 class PublicUserProfileView(APIView):
     permission_classes = [AllowAny]
 
@@ -174,7 +210,6 @@ class PublicUserProfileView(APIView):
             return Response(serializer.data)
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=404)
-
 
     
 # This is the key part: serializer = ProfileSerializer(profile, context={'request': request})
@@ -209,43 +244,6 @@ class ForgotPasswordView(APIView):
         except User.DoesNotExist:
             return Response({"error": "No account found with this email."}, status=400)
 
-class UpdateProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def put(self, request):
-        user = request.user
-        profile = user.profile
-
-        # Update fields if provided
-        profile.full_name = request.data.get("full_name", profile.full_name)
-        profile.date_of_birth = request.data.get("date_of_birth", profile.date_of_birth)
-        profile.address = request.data.get("address", profile.address)
-        profile.contact_number = request.data.get("contact_number", profile.contact_number)
-
-         # 🔹 Ensure email is updated in BOTH `User` and `Profile`
-        new_email = request.data.get("email")
-        if new_email:
-            user.email = new_email
-            profile.email = new_email  # ✅ Sync email with Profile
-            user.save()
-
-        profile.save()
-
-        return Response({"message": "Profile updated successfully!"})
-    
-class UploadProfileImageView(APIView):
-    permission_classes = [IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)  # ✅ Handle file uploads
-
-    def post(self, request):
-        profile = request.user.profile
-        image = request.FILES.get("image")  # ✅ Get image from request
-
-        if image:
-            profile.image = image
-            profile.save()
-            return Response({"message": "Profile image updated successfully!"})
-        return Response({"error": "No image provided"}, status=400)
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
@@ -272,26 +270,48 @@ class ChangePasswordView(APIView):
         update_session_auth_hash(request, user)
 
         return Response({"message": "Password updated successfully!"})
+    
+
+
+User = get_user_model()
 
 class AlbumViewSet(viewsets.ModelViewSet):
     serializer_class = AlbumSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return []  # No authentication needed for GET, HEAD, OPTIONS
+        return [permissions.IsAuthenticated()]  # Auth required for POST, PUT, DELETE
 
     def get_queryset(self):
         user_param = self.request.query_params.get('user')
 
         if user_param:
-            # Import the User model if not already imported
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            
             try:
                 user = User.objects.get(username=user_param)
                 return Album.objects.filter(user=user)
             except User.DoesNotExist:
-                return Album.objects.none()  # No albums if user not found
-        else:
+                return Album.objects.none()
+        
+        # 🛠️ Allow the authenticated user to manage their own albums
+        if self.request.user.is_authenticated:
             return Album.objects.filter(user=self.request.user)
+            
+        # No user specified — show nothing. But in your frontend you need to specify the user you are viewing so it would show the album/images like this: /albums/?user=${username}
+        return Album.objects.none()
+        
+        # ✅ Allow unauthenticated users to see all albums (or customize as needed). And when i say all i mean "ALL" users who are registered lol.
+        # return Album.objects.all()
+
+        # else:
+        #     # Anonymous users get nothing if they don’t specify a user
+        #     if self.request.user.is_authenticated:
+        #         return Album.objects.filter(user=self.request.user)
+        #     return Album.objects.none()
+
+        # If you eventually want private albums, consider adding a public = models.BooleanField(default=True) to your Album model and change:
+        # return Album.objects.filter(public=True)
+
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -299,12 +319,17 @@ class AlbumViewSet(viewsets.ModelViewSet):
 
 class AlbumImageViewSet(viewsets.ModelViewSet):
     serializer_class = AlbumImageSerializer
-    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+
+    # Only require authentication for modifying (POST/PUT/DELETE), not for viewing (GET)
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return []  # No auth required for GET, HEAD, OPTIONS
+        return [permissions.IsAuthenticated()]  # Auth required for POST, PUT, DELETE
 
     def get_queryset(self):
         album_id = self.request.query_params.get("album")
-        queryset = AlbumImage.objects.filter(album__user=self.request.user)
+        queryset = AlbumImage.objects.all()  # Show all images to anyone
         if album_id:
             queryset = queryset.filter(album__id=album_id)
         return queryset
