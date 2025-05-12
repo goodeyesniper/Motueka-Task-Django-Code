@@ -4,8 +4,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (AlbumImageViewSet, AlbumViewSet, ChangePasswordView,
                     ForgotPasswordView, LoginView, LogoutView,
                     PublicUserProfileView, RegisterView, SubmitReviewView,
-                    UserProfileView, UserProfileViewSet, 
-                    get_current_user, get_reviews)
+                    UserProfileView, UserProfileViewSet, get_current_user,
+                    get_reviews)
 
 app_name = "accounts"
 

@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include(browsetask_urls, namespace="browsetask")),
     path("api/", include("accounts.urls")),
+    path('api/notifications/', include('notifications.urls', namespace="notifications")),
 
     re_path("", include("allauth.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) # This is good for development but not in production since you don't want to serve your media files through django in production that is not safe.

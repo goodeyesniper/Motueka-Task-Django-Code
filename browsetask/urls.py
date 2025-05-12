@@ -1,5 +1,8 @@
 from django.urls import path
-from .views import HomePage, PostDetailView, PostListView, OfferCreateView, PostDetailAPI, OfferListView, AssignTaskView, OfferAuthorsView
+
+from .views import (AssignTaskView, HomePage, OfferAuthorsView,
+                    OfferCreateView, OfferListView, PostDetailAPI,
+                    PostDetailView, PostListView)
 
 app_name = "browsetask"
 

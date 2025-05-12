@@ -1,4 +1,5 @@
-from django.contrib.auth import authenticate, update_session_auth_hash, get_user_model
+from django.contrib.auth import (authenticate, get_user_model,
+                                 update_session_auth_hash)
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
@@ -33,7 +34,7 @@ class SubmitReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        reviewer = request.user  # ✅ Logged-in user from token
+        reviewer = request.user  # Logged-in user from token
         username = request.data.get("username")
         rating = request.data.get("rating")
         comment = request.data.get("comment")
@@ -99,14 +100,14 @@ class RegisterView(APIView):
             return Response({"error": "Email already registered."}, status=400)
 
         try:
-            # ✅ Create user only! The profile will be created by the signal.
+            # Create user only! The profile will be created by the signal.
             user = User.objects.create(
                 username=username,
                 email=email,
                 password=make_password(password)
             )
 
-            # ✅ Generate authentication token
+            # Generate authentication token
             token, _ = Token.objects.get_or_create(user=user)
 
             return Response({"message": "Registration successful!", "token": token.key}, status=201)
@@ -133,7 +134,7 @@ class LogoutView(APIView):
 
     def post(self, request):
         try:
-            # ✅ Delete the user's token on logout
+            # Delete the user's token on logout
             Token.objects.get(user=request.user).delete()
             return Response({"message": "Logged out successfully, token removed."}, status=200)
         except Token.DoesNotExist:
@@ -173,7 +174,7 @@ class UserProfileView(APIView):
         if serializer.is_valid():
             serializer.save()
 
-            # 🔄 Also update User.email if provided
+            # Also update User.email if provided
             new_email = request.data.get("email")
             if new_email:
                 request.user.email = new_email
@@ -244,7 +245,6 @@ class ForgotPasswordView(APIView):
         except User.DoesNotExist:
             return Response({"error": "No account found with this email."}, status=400)
 
-
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -254,24 +254,23 @@ class ChangePasswordView(APIView):
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
 
-        # 🔹 Validate current password
+        # Validate current password
         if not user.check_password(current_password):
             return Response({"error": "Incorrect current password"}, status=400)
 
-        # 🔹 Validate new password match
+        # Validate new password match
         if new_password != confirm_password:
             return Response({"error": "Passwords do not match"}, status=400)
 
-        # 🔹 Change password
+        # Change password
         user.set_password(new_password)
         user.save()
 
-        # 🔹 Keep the user logged in after password change
+        # Keep the user logged in after password change
         update_session_auth_hash(request, user)
 
         return Response({"message": "Password updated successfully!"})
     
-
 
 User = get_user_model()
 
@@ -300,7 +299,7 @@ class AlbumViewSet(viewsets.ModelViewSet):
         # No user specified — show nothing. But in your frontend you need to specify the user you are viewing so it would show the album/images like this: /albums/?user=${username}
         return Album.objects.none()
         
-        # ✅ Allow unauthenticated users to see all albums (or customize as needed). And when i say all i mean "ALL" users who are registered lol.
+        # Allow unauthenticated users to see all albums (or customize as needed). And when i say all i mean "ALL" users who are registered lol.
         # return Album.objects.all()
 
         # else:

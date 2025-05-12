@@ -1,14 +1,14 @@
-from django.views.generic import ListView, DetailView
-from .models import Post, Offer
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.views import APIView
-from .serializers import PostSerializer, OfferSerializer
-from rest_framework.response import Response
-from rest_framework import generics
-from rest_framework.exceptions import NotFound
-from rest_framework import status
 from django.contrib.auth.models import User
+from django.views.generic import DetailView, ListView
+from notifications.models import Notification
+from rest_framework import generics, status
+from rest_framework.exceptions import NotFound
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .models import Offer, Post
+from .serializers import OfferSerializer, PostSerializer
 
 
 class HomePage(ListView):
@@ -18,7 +18,6 @@ class HomePage(ListView):
     context_object_name = "posts"
     queryset = Post.objects.all().order_by('-id')[0:30] # loads 30 views at a time
 
-# When you click on the post this will show up
 class PostDetailView(DetailView):
     http_method_names = ["get"]
     template_name = "browsetask/detail.html"
@@ -34,18 +33,20 @@ class AssignTaskView(APIView):
         except Post.DoesNotExist:
             return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # ✅ Ensure only the author can reassign the task
+        # Ensure only the author can reassign the task
         if post.author != request.user:
             return Response({'error': 'You are not the author of this post'}, status=status.HTTP_403_FORBIDDEN)
 
         username = request.data.get('username')
 
-        if username == "reset":  
+        # If resetting task, delete ONLY notification for this specific task
+        if username == "reset":
+            if post.assigned_to:  # Ensure there's an assigned user before deletion
+                Notification.objects.filter(user=post.assigned_to, message=f"You have been assigned to the task: {post.task_title}").delete()
+            
             post.assigned_to = None
             post.status = "open"
             post.save()
-
-            print("Task reset successfully:", post.assigned_to, post.status)  # ✅ Debugging  
             return Response({'message': 'Task assignment reset', 'status': 'open'}, status=status.HTTP_200_OK)
 
         try:
@@ -53,10 +54,19 @@ class AssignTaskView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # ✅ Allow reassignment (No restriction on reassigning)
+        # Allow multiple assignments by keeping previous notifications
+        # Delete ONLY the notification related to THIS specific task (not all tasks)
+        Notification.objects.filter(user=user_to_assign, message=f"You have been assigned to the task: {post.task_title}").delete()
+
         post.assigned_to = user_to_assign
         post.status = "assigned"
         post.save()
+
+        # Create a new notification for the assigned user (only for this task)
+        Notification.objects.create(
+            user=user_to_assign,
+            message=f"You have been assigned to the task: {post.task_title}"
+        )
 
         serializer = PostSerializer(post, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -99,36 +109,23 @@ class OfferAuthorsView(APIView):
     
     def get(self, request, post_id):  
         try:
-            post = Post.objects.get(pk=post_id)  # ✅ Fetch the post to get the author
+            post = Post.objects.get(pk=post_id)  # Fetch the post to get the author
         except Post.DoesNotExist:
             return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
 
         offers = Offer.objects.filter(post_id=post_id).select_related("user__profile")
 
-        # ✅ Exclude the author from the list
+        # Exclude the author from the list
         offer_authors = [
             {
                 "full_name": offer.user.profile.full_name,
                 "user_id": offer.user.id,
                 "username": offer.user.username
             }
-            for offer in offers if offer.user != post.author  # ✅ Filter out the post author
+            for offer in offers if offer.user != post.author  # Filter out the post author
         ]
 
         return Response(offer_authors)
-
-# class OfferAuthorsView(APIView):  
-#     def get(self, request, post_id):  # ✅ Change `pk` to `post_id`
-#         offers = Offer.objects.filter(post_id=post_id).select_related("user__profile")
-#         offer_authors = [
-#             {
-#                 "full_name": offer.user.profile.full_name,
-#                 "user_id": offer.user.id,
-#                 "username": offer.user.username  # ✅ Include username
-#             }
-#             for offer in offers
-#         ]
-#         return Response(offer_authors)
 
 class PostListView(APIView):
     def get_permissions(self):

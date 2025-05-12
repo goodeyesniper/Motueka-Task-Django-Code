@@ -1,8 +1,9 @@
-from rest_framework import serializers
-from .models import Post, Offer
-from accounts.serializers import ProfileSerializer
 from accounts.models import Profile
+from accounts.serializers import ProfileSerializer
 from django.contrib.auth.models import User
+from rest_framework import serializers
+
+from .models import Offer, Post
 
 
 class OfferSerializer(serializers.ModelSerializer):
@@ -14,16 +15,14 @@ class OfferSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'full_name', 'message', 'created_at']
 
     def get_full_name(self, obj):
-        return obj.user.profile.full_name if hasattr(obj.user, "profile") else "Anonymous"  # ✅ Fetch from Profile
-
+        return obj.user.profile.full_name if hasattr(obj.user, "profile") else "Anonymous"  # Fetch from Profile
 
 class PostSerializer(serializers.ModelSerializer):
     author_profile = serializers.SerializerMethodField()
-    author_username = serializers.CharField(source='author.username', read_only=True)  # ✅ Add this
+    author_username = serializers.CharField(source='author.username', read_only=True)
     image = serializers.SerializerMethodField()
-    offers = OfferSerializer(many=True, read_only=True)  # ✅ Add this line
+    offers = OfferSerializer(many=True, read_only=True)
     assigned_to = serializers.StringRelatedField(read_only=True)
-
 
     # Uncomment this in the future if you want full name
     # author_full_name = serializers.SerializerMethodField()
@@ -36,7 +35,7 @@ class PostSerializer(serializers.ModelSerializer):
             'created_at', 'status',
             
             'author_profile', 'author_username', 'assigned_to',
-            'offers',  # ✅ Add this
+            'offers',  #
 
             # 'author_full_name',  # ← Uncomment this when ready
         ]
@@ -55,9 +54,9 @@ class PostSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         
         if obj.image and hasattr(obj.image, 'url'):
-            if request:  # ✅ Ensure request exists
+            if request:  # Ensure request exists
                 return request.build_absolute_uri(obj.image.url)
-            return obj.image.url  # ✅ Return relative URL if request is missing
+            return obj.image.url  # Return relative URL if request is missing
         
         return None
     

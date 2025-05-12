@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import Profile, UserProfile, Album, AlbumImage
+
+from .models import Album, AlbumImage, Profile, UserProfile
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -49,7 +51,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['id', 'user', 'about_me', 'expertise', 'task_preferences']
-        read_only_fields = ['user']  # ✅ So you don’t need to send `user` manually
+        read_only_fields = ['user']  # So you don’t need to send `user` manually
 
 class AlbumImageSerializer(serializers.ModelSerializer):
     class Meta:

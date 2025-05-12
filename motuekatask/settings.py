@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
     'browsetask',
     'accounts',
+    'notifications',
     'django.contrib.sites',
     'allauth',
     'allauth.account',
