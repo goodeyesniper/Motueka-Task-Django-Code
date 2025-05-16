@@ -33,17 +33,15 @@ class AssignTaskView(APIView):
         except Post.DoesNotExist:
             return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Ensure only the author can reassign the task
         if post.author != request.user:
             return Response({'error': 'You are not the author of this post'}, status=status.HTTP_403_FORBIDDEN)
 
         username = request.data.get('username')
 
-        # If resetting task, delete ONLY notification for this specific task
+        # Reset logic
         if username == "reset":
-            if post.assigned_to:  # Ensure there's an assigned user before deletion
-                Notification.objects.filter(user=post.assigned_to, message=f"You have been assigned to the task: {post.task_title}").delete()
-            
+            if post.assigned_to:
+                Notification.objects.filter(user=post.assigned_to, task=post).delete()  # ✅ safer deletion
             post.assigned_to = None
             post.status = "open"
             post.save()
@@ -54,23 +52,22 @@ class AssignTaskView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Allow multiple assignments by keeping previous notifications
-        # Delete ONLY the notification related to THIS specific task (not all tasks)
-        Notification.objects.filter(user=user_to_assign, message=f"You have been assigned to the task: {post.task_title}").delete()
+        # Delete old notification for this task (if any)
+        Notification.objects.filter(user=user_to_assign, task=post).delete()  # ✅ clean match
 
         post.assigned_to = user_to_assign
         post.status = "assigned"
         post.save()
 
-        # Create a new notification for the assigned user (only for this task)
+        # Create the new notification with proper task reference
         Notification.objects.create(
             user=user_to_assign,
-            message=f"You have been assigned to the task: {post.task_title}"
+            task=post,  # ✅ This is the key part
+            message=f"Congratulations! You have been assigned to the task: {post.task_title}"
         )
 
         serializer = PostSerializer(post, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class PostDetailAPI(APIView):
     permission_classes = [AllowAny]  # Or use IsAuthenticated if the post is private

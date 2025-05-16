@@ -3,8 +3,25 @@ from .serializers import NotificationSerializer
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
-from rest_framework import serializers
-from django.contrib.auth.models import User
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_notification_by_user_and_task(request):
+    username = request.query_params.get('username')
+    task_id = request.query_params.get('task_id')
+
+    if not username or not task_id:
+        return Response({"error": "username and task_id are required"}, status=400)
+
+    try:
+        notif = Notification.objects.get(user__username=username, task_id=task_id)
+        notif.delete()
+        return Response({"success": "Notification deleted."}, status=204)
+    except Notification.DoesNotExist:
+        return Response({"error": "Notification not found."}, status=404)
 
 
 class UserNotificationList(generics.ListAPIView):
@@ -15,9 +32,9 @@ class UserNotificationList(generics.ListAPIView):
         username = self.request.GET.get("username")  # Get username from query params
 
         if not username:
-            return Notification.objects.filter(user=self.request.user).order_by('-timestamp')  # Default to logged-in user
+            return Notification.objects.filter(user=self.request.user).order_by('-timestamp')
         
-        return Notification.objects.filter(user__username=username).order_by('-timestamp')  # Filter by username
+        return Notification.objects.filter(user__username=username).order_by('-timestamp')
 
 class MarkNotificationRead(generics.UpdateAPIView):
     queryset = Notification.objects.all()
@@ -34,21 +51,10 @@ class CreateNotification(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        # Get username from request data
-        username = self.request.data.get("user")
+        print(">>> DEBUG: Incoming data to CreateNotification:", self.request.data)
+        serializer.save()
 
-        if not username:
-            raise serializers.ValidationError({"error": "Username is required."})
-
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise serializers.ValidationError({"error": "User not found."})
-
-        # Save notification with associated user
-        serializer.save(user=user)
-
-class DeleteNotification(generics.DestroyAPIView):
+class DeleteNotificationById(generics.DestroyAPIView):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]

@@ -56,5 +56,11 @@ class Offer(models.Model):
     
     def __str__(self):
         return f"{self.user.profile.full_name} ({self.user.username}) offered on {self.post.task_title}"
+    
+    @property
+    def profile_image_url(self):
+        if self.user.profile.image:  # Ensure user has an image
+            return self.user.profile.image.url
+        return "/profiles/default.jpg"  # Fallback default image
 
 
