@@ -15,8 +15,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Album, AlbumImage, Profile, Review, UserProfile
-from .serializers import (AlbumImageSerializer, AlbumSerializer,
+from .models import Album, AlbumImage, Profile, UserProfile
+from .serializers import (AlbumImageSerializer, AlbumSerializer, ReviewSerializer,
                           ProfileSerializer, UserProfileSerializer)
 
 
@@ -30,32 +30,6 @@ def get_current_user(request):
         # 'profile_picture': request.user.profile.picture.url if hasattr(request.user, 'profile') else None,
     })
 
-class SubmitReviewView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        reviewer = request.user  # Logged-in user from token
-        username = request.data.get("username")
-        rating = request.data.get("rating")
-        comment = request.data.get("comment")
-
-        if not username or not rating or comment is None:
-            return Response({"error": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            profile = Profile.objects.get(user__username=username)
-        except Profile.DoesNotExist:
-            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        Review.objects.create(
-            reviewer=reviewer,
-            profile=profile,
-            rating=rating,
-            comment=comment
-        )
-
-        return Response({"message": "Review submitted successfully!"}, status=status.HTTP_201_CREATED)
-
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def get_reviews(request, username):
@@ -65,16 +39,28 @@ def get_reviews(request, username):
         return Response({"error": "User not found."}, status=404)
 
     reviews = profile.reviews.all()
-    data = [
-        {
-            "reviewer": review.reviewer.username,
-            "rating": review.rating,
-            "comment": review.comment,
-            "created_at": review.created_at
-        }
-        for review in reviews
-    ]
-    return Response(data)
+    
+    serializer = ReviewSerializer(reviews, many=True, context={'request': request})
+    return Response(serializer.data)
+
+class SubmitReviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        username = request.data.get("username")
+        if not username:
+            return Response({"error": "Username is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            profile = Profile.objects.get(user__username=username)
+        except Profile.DoesNotExist:
+            return Response({"error": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(reviewer=request.user, profile=profile)
+            return Response({"message": "Review submitted successfully!"}, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -163,7 +149,6 @@ class UserProfileView(APIView):
         except User.DoesNotExist:
             return Response({"detail": "User not found"}, status=404)
         
-
     def put(self, request):
         if not request.user.is_authenticated:
             return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -183,7 +168,6 @@ class UserProfileView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -197,8 +181,6 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)
-
-
 
 class PublicUserProfileView(APIView):
     permission_classes = [AllowAny]
@@ -292,7 +274,7 @@ class AlbumViewSet(viewsets.ModelViewSet):
             except User.DoesNotExist:
                 return Album.objects.none()
         
-        # 🛠️ Allow the authenticated user to manage their own albums
+        # Allow the authenticated user to manage their own albums
         if self.request.user.is_authenticated:
             return Album.objects.filter(user=self.request.user)
             
@@ -311,10 +293,8 @@ class AlbumViewSet(viewsets.ModelViewSet):
         # If you eventually want private albums, consider adding a public = models.BooleanField(default=True) to your Album model and change:
         # return Album.objects.filter(public=True)
 
-
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
 
 class AlbumImageViewSet(viewsets.ModelViewSet):
     serializer_class = AlbumImageSerializer

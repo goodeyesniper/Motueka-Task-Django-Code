@@ -20,6 +20,9 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='api_logout'),
     path('current-user/', get_current_user, name='get_current_user'),
 
+    path('profile/review/', SubmitReviewView.as_view(), name='submit-review'),
+    path("profile/<str:username>/reviews/", get_reviews, name="get_reviews"),
+
     path("profile/", UserProfileView.as_view(), name="profile_get_update"),
     path('profile/<str:username>/', UserProfileView.as_view(), name='api_profile'),
 
@@ -29,6 +32,6 @@ urlpatterns = [
     path("password/change/", ChangePasswordView.as_view(), name="api_password_change"),
 
     path('public-user-profile/<str:username>/', PublicUserProfileView.as_view(), name='api_public_user_profile'),
-    path('profile/review/', SubmitReviewView.as_view(), name='submit-review'),
-    path("profile/<str:username>/reviews/", get_reviews, name="get_reviews"),
+
+    
 ]

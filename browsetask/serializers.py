@@ -24,8 +24,6 @@ class OfferSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.user.profile.image.url) if request else obj.user.profile.image.url
         return None  # Return None or a default image
 
-
-
 class PostSerializer(serializers.ModelSerializer):
     author_profile = serializers.SerializerMethodField()
     author_username = serializers.CharField(source='author.username', read_only=True)

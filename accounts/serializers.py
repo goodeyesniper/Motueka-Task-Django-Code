@@ -1,6 +1,7 @@
 from rest_framework import serializers
+from .models import Album, AlbumImage, Profile, UserProfile, Review
+from django.contrib.auth.models import User
 
-from .models import Album, AlbumImage, Profile, UserProfile
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -65,3 +66,38 @@ class AlbumSerializer(serializers.ModelSerializer):
         model = Album
         fields = ['id', 'title', 'created_at', 'images']
 
+# class ReviewerSerializer(serializers.ModelSerializer):
+#     full_name = serializers.CharField(source='profile.full_name')
+#     image = serializers.ImageField(source='profile.image', allow_null=True)
+
+#     class Meta:
+#         model = User
+#         fields = ['username', 'full_name', 'image']
+
+class ReviewerSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='profile.full_name')
+    image = serializers.SerializerMethodField()  # 👈 Change from ImageField to method
+
+    class Meta:
+        model = User
+        fields = ['username', 'full_name', 'image']
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        profile_image = obj.profile.image
+        if profile_image and hasattr(profile_image, 'url'):
+            return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+        return None
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    reviewer = ReviewerSerializer(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['reviewer', 'rating', 'comment', 'created_at']
+
+# class ReviewSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Review
+#         fields = ['rating', 'comment', 'created_at']  # Remove 'reviewer' and 'profile' from here

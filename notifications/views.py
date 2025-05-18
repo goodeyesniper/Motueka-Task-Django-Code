@@ -35,16 +35,31 @@ class UserNotificationList(generics.ListAPIView):
             return Notification.objects.filter(user=self.request.user).order_by('-timestamp')
         
         return Notification.objects.filter(user__username=username).order_by('-timestamp')
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_all_notifications_read(request):
+    request.user.notifications.filter(is_read=False).update(is_read=True)
+    return Response({'status': 'all marked as read'})
 
 class MarkNotificationRead(generics.UpdateAPIView):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_update(self, serializer):
-        if self.get_object().user != self.request.user:
+    def update(self, request, *args, **kwargs):
+        # Pass partial=True and supply default data
+        instance = self.get_object()
+
+        if instance.user != request.user:
             raise PermissionDenied("You can only update your own notifications.")
-        serializer.save(is_read=True)
+
+        # Only update is_read, we can ignore incoming data
+        serializer = self.get_serializer(instance, data={"is_read": True}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
 
 class CreateNotification(generics.CreateAPIView):
     serializer_class = NotificationSerializer
