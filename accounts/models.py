@@ -22,6 +22,11 @@ class Profile(models.Model):
     address = models.TextField(blank=True, null=True, default="Not provided")
     contact_number = models.CharField(max_length=10, blank=True, null=True, default="1234567890")
 
+    facebook = models.URLField(blank=True, null=True)
+    instagram = models.URLField(blank=True, null=True)
+    twitter = models.URLField(blank=True, null=True)
+    linkedin = models.URLField(blank=True, null=True)
+
     def update_last_seen(self):
         self.last_seen = now()
         self.save()

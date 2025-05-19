@@ -8,12 +8,16 @@ from .models import Offer, Post
 
 class OfferSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
+    username = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
     profile_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Offer
-        fields = ['id', 'user', 'full_name', 'message', 'created_at', 'profile_image']
+        fields = ['id', 'user', 'username', 'full_name', 'message', 'created_at', 'profile_image']
+
+    def get_username(self, obj):
+        return obj.user.username  # Fetch username directly from User model
 
     def get_full_name(self, obj):
         return obj.user.profile.full_name if hasattr(obj.user, "profile") else "Anonymous"  # Fetch from Profile

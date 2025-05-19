@@ -3,7 +3,6 @@ from .models import Album, AlbumImage, Profile, UserProfile, Review
 from django.contrib.auth.models import User
 
 
-
 class ProfileSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     about_me = serializers.SerializerMethodField()
@@ -27,6 +26,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'skills',
             'member_since',
             'username',
+            'facebook', 'instagram', 'linkedin', 'twitter'
         ]  # Add more fields as needed
 
     def get_image_url(self, obj):
