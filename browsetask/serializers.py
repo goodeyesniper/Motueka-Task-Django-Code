@@ -35,8 +35,11 @@ class PostSerializer(serializers.ModelSerializer):
     offers = OfferSerializer(many=True, read_only=True)
     assigned_to = serializers.StringRelatedField(read_only=True)
 
-    # Uncomment this in the future if you want full name
-    # author_full_name = serializers.SerializerMethodField()
+    author_full_name = serializers.SerializerMethodField()
+    assigned_to_full_name = serializers.SerializerMethodField()
+
+    author_profile_image = serializers.SerializerMethodField()
+    assigned_to_profile_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -46,9 +49,10 @@ class PostSerializer(serializers.ModelSerializer):
             'created_at', 'status',
             
             'author_profile', 'author_username', 'assigned_to',
-            'offers',  #
+            'offers',
 
-            # 'author_full_name',  # ← Uncomment this when ready
+            'author_full_name', 'assigned_to_full_name',
+            'author_profile_image', 'assigned_to_profile_image',
         ]
 
         # fields = '__all__' # This is an alternative, try this out next time.
@@ -71,7 +75,34 @@ class PostSerializer(serializers.ModelSerializer):
         
         return None
     
-    # Uncomment this too when ready
-    # def get_author_full_name(self, obj):
-    #     full_name = f"{obj.author.first_name} {obj.author.last_name}".strip()
-    #     return full_name if full_name else None
+    def get_author_full_name(self, obj):
+        try:
+            return obj.author.profile.full_name
+        except Profile.DoesNotExist:
+            return obj.author.username  # Fallback if profile doesn't exist
+
+    def get_assigned_to_full_name(self, obj):
+        try:
+            return obj.assigned_to.profile.full_name if obj.assigned_to else None
+        except Profile.DoesNotExist:
+            return str(obj.assigned_to) if obj.assigned_to else None
+    
+    def get_author_profile_image(self, obj):
+        request = self.context.get('request')
+        try:
+            profile_image = obj.author.profile.image
+            if profile_image and hasattr(profile_image, 'url'):
+                return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+        except AttributeError:
+            pass
+        return None  # Optional: replace with a default image URL if needed
+
+    def get_assigned_to_profile_image(self, obj):
+        request = self.context.get('request')
+        try:
+            profile_image = obj.assigned_to.profile.image
+            if profile_image and hasattr(profile_image, 'url'):
+                return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+        except AttributeError:
+            pass
+        return None

@@ -6,6 +6,52 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
+from rest_framework.views import APIView
+from .models import ChatMessage
+from browsetask.models import Post
+from .serializers import ChatMessageSerializer
+
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def get_chat_messages(request, task_id):
+#     messages = ChatMessage.objects.filter(task_id=task_id).order_by('timestamp')
+#     serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
+#     return Response(serializer.data)
+
+class ChatView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, task_id):
+        try:
+            task = Post.objects.get(pk=task_id)
+            if request.user not in [task.author, task.assigned_to]:
+                return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+            
+            messages = ChatMessage.objects.filter(task=task).order_by("timestamp")
+            serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Post.DoesNotExist:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request, task_id):
+        try:
+            task = Post.objects.get(pk=task_id)
+            if request.user not in [task.author, task.assigned_to]:
+                return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+            
+            message = request.data.get("message", "")
+            chat_message = ChatMessage.objects.create(task=task, sender=request.user, message=message)
+
+            return Response({
+                'message': 'Message sent',
+                'data': ChatMessageSerializer(chat_message, context={'request': request}).data
+            }, status=status.HTTP_201_CREATED)
+
+        except Post.DoesNotExist:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])

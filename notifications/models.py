@@ -12,3 +12,13 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"To {self.user.username}: {self.message[:50]}"
+
+class ChatMessage(models.Model):
+    task = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="chat_messages")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.message[:50]}"
+

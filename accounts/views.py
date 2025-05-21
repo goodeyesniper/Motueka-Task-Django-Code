@@ -24,10 +24,9 @@ from .serializers import (AlbumImageSerializer, AlbumSerializer, ReviewSerialize
 @permission_classes([IsAuthenticated])
 def get_current_user(request):
     return Response({
+        'id': request.user.id,
         'username': request.user.username,
-        # 'full_name': request.user.get_full_name(),
-        # 'email': request.user.email,
-        # 'profile_picture': request.user.profile.picture.url if hasattr(request.user, 'profile') else None,
+        'full_name': request.user.profile.full_name,
     })
 
 @api_view(["GET"])

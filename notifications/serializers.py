@@ -2,11 +2,35 @@ from rest_framework import serializers
 from .models import Notification
 from django.contrib.auth.models import User
 from browsetask.models import Post
+from .models import ChatMessage
 
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender = serializers.CharField(source='sender.username', read_only=True)
+    sender_full_name = serializers.CharField(source='sender.profile.full_name', read_only=True)
+    sender_id = serializers.IntegerField(source='sender.id', read_only=True)
+    sender_profile_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChatMessage
+        fields = [
+            'id', 'task', 'sender', 'sender_full_name', 'sender_id',
+            'sender_profile_image', 'message', 'timestamp'
+        ]
+
+    def get_sender_profile_image(self, obj):
+        try:
+            request = self.context.get('request')
+            image = obj.sender.profile.image
+            if image:
+                return request.build_absolute_uri(image.url) if request else image.url
+            return None
+        except:
+            return None
 
 class NotificationSerializer(serializers.ModelSerializer):
-    user = serializers.CharField()  # Accept username instead of a User object
-    task_id = serializers.SerializerMethodField()  # Now using task_id
+    user = serializers.CharField()
+    task_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Notification
