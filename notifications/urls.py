@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import (CreateNotification, MarkNotificationRead, DeleteNotificationById, ChatView,
+from .views import (CreateNotification, MarkNotificationRead, DeleteNotificationById, ChatView, UnreadChatCountView,
                     UserNotificationList, delete_notification_by_user_and_task, mark_all_notifications_read)
 
 app_name = "notifications"
@@ -16,7 +16,6 @@ urlpatterns = [
     path('<int:pk>/delete/', DeleteNotificationById.as_view(), name='delete-notification-by-id'),  # DELETE Notifications
 
     path('chat/<int:task_id>/', ChatView.as_view(), name='chat'),
+    path('chat/unread-count/', UnreadChatCountView.as_view(), name='chat-unread-count'),
     # path('chat/<int:task_id>/messages/', get_chat_messages, name='chat-messages'),
-
-
 ]

@@ -15,7 +15,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         model = ChatMessage
         fields = [
             'id', 'task', 'sender', 'sender_full_name', 'sender_id',
-            'sender_profile_image', 'message', 'timestamp'
+            'sender_profile_image', 'message', 'timestamp', 'is_read'
         ]
 
     def get_sender_profile_image(self, obj):
@@ -27,6 +27,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             return None
         except:
             return None
+
 
 class NotificationSerializer(serializers.ModelSerializer):
     user = serializers.CharField()

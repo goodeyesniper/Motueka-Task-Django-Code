@@ -10,7 +10,7 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'task', 'sender', 'message', 'timestamp')  # Columns to show
+    list_display = ('id', 'task', 'sender', 'message', 'is_read','timestamp')  # Columns to show
     search_fields = ('message', 'sender__username', 'task__task_title')  # Searchable fields
     list_filter = ('timestamp', 'sender')  # Filters on right sidebar
     ordering = ('-timestamp',)  # Order by newest messages first
