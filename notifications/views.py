@@ -14,24 +14,19 @@ from .serializers import ChatMessageSerializer
 from django.shortcuts import get_object_or_404
 
 from django.db.models import Q, Count
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from .models import ChatMessage
 
 class UnreadChatCountView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user = request.user
-
-        unread_count = ChatMessage.objects.filter(
-            Q(is_read=False) &
-            ~Q(sender=user) &
-            (Q(task__author=user) | Q(task__assigned_to=user))
+        count = ChatMessage.objects.filter(
+            Q(task__author=request.user) | Q(task__assigned_to=request.user),
+            ~Q(sender=request.user),
+            is_read=False
         ).count()
 
-        return Response({"unread_count": unread_count}, status=status.HTTP_200_OK)
+        return Response({'unread_count': count})
+    
 
 class ChatView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -46,7 +41,7 @@ class ChatView(APIView):
         serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
-
+    
     def post(self, request, task_id):
         """Send a message and mark it as unread for the receiver"""
         task = get_object_or_404(Post, pk=task_id)
@@ -54,16 +49,36 @@ class ChatView(APIView):
             return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
 
         message_text = request.data.get("message", "")
-        chat_message = ChatMessage.objects.create(task=task, sender=request.user, message=message_text)
 
-        # Mark `is_read=False` for receiver
-        receiver_messages = ChatMessage.objects.filter(task=task).exclude(sender=request.user)
-        receiver_messages.update(is_read=False)  # Bulk update for efficiency
+        chat_message = ChatMessage.objects.create(
+            task=task,
+            sender=request.user,
+            message=message_text,
+            is_read=False  # This ensures only the new message is unread
+        )
 
         return Response({
             'message': 'Message sent',
             'data': ChatMessageSerializer(chat_message, context={'request': request}).data
         }, status=status.HTTP_201_CREATED)
+
+    # def post(self, request, task_id):
+    #     """Send a message and mark it as unread for the receiver"""
+    #     task = get_object_or_404(Post, pk=task_id)
+    #     if request.user not in [task.author, task.assigned_to]:
+    #         return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+
+    #     message_text = request.data.get("message", "")
+    #     chat_message = ChatMessage.objects.create(task=task, sender=request.user, message=message_text)
+
+    #     # Mark `is_read=False` for receiver
+    #     receiver_messages = ChatMessage.objects.filter(task=task).exclude(sender=request.user)
+    #     receiver_messages.update(is_read=False)  # Bulk update for efficiency
+
+    #     return Response({
+    #         'message': 'Message sent',
+    #         'data': ChatMessageSerializer(chat_message, context={'request': request}).data
+    #     }, status=status.HTTP_201_CREATED)
 
     def patch(self, request, task_id):
         """Mark all messages as read after viewing"""
@@ -71,7 +86,7 @@ class ChatView(APIView):
         if request.user not in [task.author, task.assigned_to]:
             return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
 
-        ChatMessage.objects.filter(task=task, is_read=False).update(is_read=True)
+        ChatMessage.objects.filter(task=task, is_read=False).exclude(sender=request.user).update(is_read=True)
 
         return Response({"status": "All messages marked as read"}, status=status.HTTP_200_OK)
 

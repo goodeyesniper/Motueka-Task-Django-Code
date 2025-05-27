@@ -16,6 +16,7 @@ urlpatterns = [
     path('<int:pk>/delete/', DeleteNotificationById.as_view(), name='delete-notification-by-id'),  # DELETE Notifications
 
     path('chat/<int:task_id>/', ChatView.as_view(), name='chat'),
-    path('chat/unread-count/', UnreadChatCountView.as_view(), name='chat-unread-count'),
+    path("chat/unread/", UnreadChatCountView.as_view()),
+
     # path('chat/<int:task_id>/messages/', get_chat_messages, name='chat-messages'),
 ]
