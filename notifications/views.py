@@ -12,8 +12,39 @@ from browsetask.models import Post
 from .serializers import ChatMessageSerializer
 
 from django.shortcuts import get_object_or_404
-
 from django.db.models import Q, Count
+
+
+from .serializers import ChatMessageSerializer  # make sure this is imported
+
+class UnreadChatMessagesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            messages = ChatMessage.objects.filter(
+                Q(task__author=request.user) | Q(task__assigned_to=request.user),
+                ~Q(sender=request.user),
+                is_read=False
+            ).select_related('sender', 'task', 'sender__profile')
+
+            data = []
+            for msg in messages:
+                # Use the serializer just for profile image and full name
+                serializer = ChatMessageSerializer(msg, context={'request': request})
+                serialized = serializer.data
+
+                data.append({
+                    'sender_full_name': serialized.get('sender_full_name'),
+                    'sender_profile_image': serialized.get('sender_profile_image'),
+                    'message': msg.message,
+                    'task_id': msg.task.id,
+                })
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UnreadChatCountView(APIView):
     permission_classes = [IsAuthenticated]
@@ -61,24 +92,6 @@ class ChatView(APIView):
             'message': 'Message sent',
             'data': ChatMessageSerializer(chat_message, context={'request': request}).data
         }, status=status.HTTP_201_CREATED)
-
-    # def post(self, request, task_id):
-    #     """Send a message and mark it as unread for the receiver"""
-    #     task = get_object_or_404(Post, pk=task_id)
-    #     if request.user not in [task.author, task.assigned_to]:
-    #         return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
-
-    #     message_text = request.data.get("message", "")
-    #     chat_message = ChatMessage.objects.create(task=task, sender=request.user, message=message_text)
-
-    #     # Mark `is_read=False` for receiver
-    #     receiver_messages = ChatMessage.objects.filter(task=task).exclude(sender=request.user)
-    #     receiver_messages.update(is_read=False)  # Bulk update for efficiency
-
-    #     return Response({
-    #         'message': 'Message sent',
-    #         'data': ChatMessageSerializer(chat_message, context={'request': request}).data
-    #     }, status=status.HTTP_201_CREATED)
 
     def patch(self, request, task_id):
         """Mark all messages as read after viewing"""

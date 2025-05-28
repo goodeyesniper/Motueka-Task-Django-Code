@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from .models import Notification
+from .models import Notification, ChatMessage
 from django.contrib.auth.models import User
 from browsetask.models import Post
-from .models import ChatMessage
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
