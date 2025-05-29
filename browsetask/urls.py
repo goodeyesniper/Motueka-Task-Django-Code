@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import (AssignTaskView, HomePage, OfferAuthorsView,
                     OfferCreateView, OfferListView, PostDetailAPI,
-                    PostDetailView, PostListView)
+                    PostDetailView, PostListView, CloseTaskView)
 
 app_name = "browsetask"
 
@@ -17,5 +17,6 @@ urlpatterns = [
     path("api/posts/<int:post_id>/offer-authors/", OfferAuthorsView.as_view(), name="offer-authors"),
    
     path('api/posts/<int:pk>/', PostDetailAPI.as_view(), name='post_detail_api'),
+    path("api/posts/<int:post_id>/close/", CloseTaskView.as_view(), name="close_task"),
     
 ]

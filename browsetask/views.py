@@ -6,6 +6,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.http import JsonResponse
 
 from .models import Offer, Post
 from .serializers import OfferSerializer, PostSerializer
@@ -23,6 +24,25 @@ class PostDetailView(DetailView):
     template_name = "browsetask/detail.html"
     model = Post
     context_object_name = "post"
+
+
+class CloseTaskView(APIView):
+    permission_classes = [IsAuthenticated]  # Ensure user is logged in
+
+    def post(self, request, post_id):
+        try:
+            post = Post.objects.get(pk=post_id)
+        except Post.DoesNotExist:
+            return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Restrict to the post author
+        if post.author != request.user:
+            return Response({'error': 'You are not the author of this post'}, status=status.HTTP_403_FORBIDDEN)
+
+        post.status = "closed"
+        post.save()
+        return Response({"message": "Task closed successfully"}, status=status.HTTP_200_OK)
+    
 
 class AssignTaskView(APIView):
     permission_classes = [IsAuthenticated]
