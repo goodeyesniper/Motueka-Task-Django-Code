@@ -27,7 +27,7 @@ class PostDetailView(DetailView):
 
 
 class CloseTaskView(APIView):
-    permission_classes = [IsAuthenticated]  # Ensure user is logged in
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, post_id):
         try:
