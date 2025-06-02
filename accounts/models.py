@@ -20,7 +20,7 @@ class Profile(models.Model):
     email = models.EmailField(null=True, blank=False)
     date_of_birth = models.DateField(blank=True, null=True, default="2000-01-01")  # Default to a generic DOB
     address = models.TextField(blank=True, null=True, default="Not provided")
-    contact_number = models.CharField(max_length=10, blank=True, null=True, default="1234567890")
+    contact_number = models.CharField(max_length=20, blank=True, null=True, default="1234567890")
 
     facebook = models.URLField(blank=True, null=True)
     instagram = models.URLField(blank=True, null=True)
