@@ -24,7 +24,7 @@ MIDDLEWARE = [
 
 # **Note: This is just a sample! Change it to your own frontend address later
 CORS_ALLOWED_ORIGINS = [
-    'https://render-deploy-tutorial-reactjs-code.onrender.com'
+    'https://motueka-task-reactjs-code.onrender.com'
 ]
 
 STORAGES = {
