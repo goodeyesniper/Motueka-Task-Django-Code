@@ -10,6 +10,11 @@ import os
 
 IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
 
+if IS_DEVELOPMENT:
+    from django.db.models import ImageField
+else:
+    from cloudinary.models import CloudinaryField
+
 
 # User personal information model
 class Profile(models.Model):
@@ -71,7 +76,7 @@ class Album(models.Model):
 
 class AlbumImage(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="images")
-    image = models.ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image')
+    image = ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image')
     description = models.TextField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
