@@ -41,6 +41,8 @@ STORAGES = {
     },
 }
 
+STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticCloudinaryStorage'
+
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ['DATABASE_URL'], 
