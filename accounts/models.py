@@ -10,12 +10,6 @@ import os
 
 IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
 
-if IS_DEVELOPMENT:
-    from django.db.models import ImageField
-else:
-    from cloudinary.models import CloudinaryField
-
-
 # User personal information model
 class Profile(models.Model):
     user = models.OneToOneField(
@@ -73,7 +67,15 @@ class Album(models.Model):
 
     def __str__(self):
         return self.title
+    
+    
+# Import the correct field types first
+if IS_DEVELOPMENT:
+    from django.db.models import ImageField
+else:
+    from cloudinary.models import CloudinaryField
 
+# For local host use this
 class AlbumImage(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="images")
     image = ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image')
