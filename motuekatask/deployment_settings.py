@@ -4,7 +4,10 @@ from .settings import *
 from .settings import BASE_DIR
 
 ALLOWED_HOSTS = [os.environ.get('RENDER_EXTERNAL_HOSTNAME')]
-CSRF_TRUSTED_ORIGINS = ['https://'+os.environ.get('RENDER_EXTERNAL_HOSTNAME')]
+CSRF_TRUSTED_ORIGINS = [
+    'https://'+os.environ.get('RENDER_EXTERNAL_HOSTNAME'),
+    'https://motueka-task-reactjs-code.onrender.com',
+]
 
 DEBUG = False
 SECRET_KEY = os.environ.get('SECRET_KEY') # <-- change this later
@@ -27,9 +30,11 @@ CORS_ALLOWED_ORIGINS = [
     'https://motueka-task-reactjs-code.onrender.com'
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
 STORAGES = {
     "default":{
-        "BACKEND" : "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "storages.backends.cloudinary.CloudinaryStorage",
     },
     "staticfiles": {
         "BACKEND" : "whitenoise.storage.CompressedStaticFilesStorage",
@@ -42,6 +47,15 @@ DATABASES = {
         conn_max_age=600
     )
 }
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET')
+}
+
+MEDIA_URL = f"https://res.cloudinary.com/{os.getenv('CLOUDINARY_CLOUD_NAME')}/"
+
 
 # LOGGING = {
 #     'version': 1,

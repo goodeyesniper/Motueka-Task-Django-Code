@@ -4,6 +4,11 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.timezone import now
 from sorl.thumbnail import ImageField
+from cloudinary.models import CloudinaryField
+
+import os
+
+IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
 
 
 # User personal information model
@@ -13,7 +18,8 @@ class Profile(models.Model):
         on_delete=models.CASCADE,
         related_name="profile"
     )
-    image = ImageField(upload_to='profiles', blank=True, null=True) # blank=True, null=True OR default='profiles/default.jpg'
+    image = ImageField(upload_to='profiles', blank=True, null=True) if IS_DEVELOPMENT else CloudinaryField('image')
+
     last_seen = models.DateTimeField(default=now)
 
     full_name = models.CharField(max_length=100, default="Anonymous")

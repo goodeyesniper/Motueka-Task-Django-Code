@@ -1,6 +1,18 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from cloudinary.models import CloudinaryField
+
+import os
+
+IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
+
+# Import the correct field types first
+if IS_DEVELOPMENT:
+    from django.db.models import ImageField
+else:
+    from cloudinary.models import CloudinaryField
+
 
 class Post(models.Model):
     STATUS_CHOICES = [
@@ -8,10 +20,9 @@ class Post(models.Model):
         ('assigned', 'Assigned'),
         ('closed', 'Closed'),
     ]
-
     task_title = models.CharField(max_length=50, default="Untitled Task")
     task_details = models.TextField(default="No details provided")
-    image = models.ImageField(upload_to='task_images/', blank=True, null=True)
+    image = ImageField(upload_to='task_images/', blank=True, null=True) if IS_DEVELOPMENT else CloudinaryField('image')
     address = models.CharField(max_length=255, default="No address provided")
     date = models.DateField(default=timezone.now)
 
