@@ -195,3 +195,6 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 if DEBUG:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+if DEBUG:
+    THUMBNAIL_STORAGE = 'django.core.files.storage.FileSystemStorage'

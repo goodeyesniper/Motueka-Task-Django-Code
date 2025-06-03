@@ -34,7 +34,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 STORAGES = {
     "default":{
-        "BACKEND": "storages.backends.cloudinary.CloudinaryStorage",
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
         "BACKEND" : "whitenoise.storage.CompressedStaticFilesStorage",
@@ -42,6 +42,8 @@ STORAGES = {
 }
 
 STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticCloudinaryStorage'
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+THUMBNAIL_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 DATABASES = {
     'default': dj_database_url.config(
