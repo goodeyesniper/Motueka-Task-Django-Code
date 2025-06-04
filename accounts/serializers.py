@@ -67,10 +67,30 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'about_me', 'expertise', 'task_preferences']
         read_only_fields = ['user']  # So you don’t need to send `user` manually
 
+# class AlbumImageSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = AlbumImage
+#         fields = ['id', 'image', 'description', 'uploaded_at']
+
 class AlbumImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()  # Keep the field name as 'image'
+
     class Meta:
         model = AlbumImage
         fields = ['id', 'image', 'description', 'uploaded_at']
+
+    def get_image(self, obj):
+        request = self.context.get('request', None)
+
+        if obj.image and hasattr(obj.image, 'url'):
+            image_url = obj.image.url.replace("http://", "https://")  # Force HTTPS
+
+            if request:
+                return request.build_absolute_uri(image_url)
+            elif image_url:
+                return image_url
+
+        return None
 
 class AlbumSerializer(serializers.ModelSerializer):
     images = AlbumImageSerializer(many=True, read_only=True)
@@ -78,7 +98,6 @@ class AlbumSerializer(serializers.ModelSerializer):
     class Meta:
         model = Album
         fields = ['id', 'title', 'created_at', 'images']
-
 
 class ReviewerSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='profile.full_name')
