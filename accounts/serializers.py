@@ -72,23 +72,33 @@ class UserProfileSerializer(serializers.ModelSerializer):
 #         model = AlbumImage
 #         fields = ['id', 'image', 'description', 'uploaded_at']
 
+import os
+
+IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
+
 class AlbumImageSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
-
-    def get_image(self, obj):
-        request = self.context.get('request')
-        image_field = obj.image
-
-        if image_field and hasattr(image_field, 'url'):
-            # Force HTTPS to avoid mixed content warnings
-            secure_url = image_field.url.replace("http://", "https://")
-            return request.build_absolute_uri(secure_url) if request else secure_url
-
-        return None
-
     class Meta:
         model = AlbumImage
         fields = ['id', 'image', 'description', 'uploaded_at']
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        image_url = rep.get('image')
+
+        if image_url:
+            # In production, make sure the URL is HTTPS
+            if not IS_DEVELOPMENT and image_url.startswith("http://"):
+                image_url = image_url.replace("http://", "https://")
+                rep['image'] = image_url
+
+            # In development, make sure it's fully qualified
+            elif IS_DEVELOPMENT:
+                request = self.context.get('request')
+                if request and image_url.startswith('/'):
+                    image_url = request.build_absolute_uri(image_url)
+                    rep['image'] = image_url
+
+        return rep
 
 
 class AlbumSerializer(serializers.ModelSerializer):

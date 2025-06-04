@@ -67,17 +67,17 @@ class Album(models.Model):
     def __str__(self):
         return self.title
     
-    
-# Import the correct field types first
+
 if IS_DEVELOPMENT:
-    from django.db.models import ImageField
+    from django.db.models import ImageField as CustomImageField
 else:
-    from cloudinary.models import CloudinaryField
+    from cloudinary.models import CloudinaryField as CustomImageField
 
 # For local host use this
 class AlbumImage(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="images")
-    image = ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image')
+    # image = ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image')
+    image = CustomImageField(upload_to="portfolio_images/", blank=True, null=True)
     description = models.TextField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
