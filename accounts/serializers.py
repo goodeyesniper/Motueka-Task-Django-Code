@@ -27,15 +27,28 @@ class ProfileSerializer(serializers.ModelSerializer):
             'member_since',
             'username',
             'facebook', 'instagram', 'linkedin', 'twitter'
-        ]  # Add more fields as needed
+        ]
 
     def get_image_url(self, obj):
         request = self.context.get('request', None)
-        if obj.image and request:
-            return request.build_absolute_uri(obj.image.url)
-        elif obj.image:
-            return obj.image.url  # fallback if request is None
+
+        if obj.image and hasattr(obj.image, 'url'):
+            image_url = obj.image.url.replace("http://", "https://")  # Force HTTPS
+
+            if request:
+                return request.build_absolute_uri(image_url)
+            elif image_url:  # Preserve the original fallback
+                return image_url
+
         return None
+
+    # def get_image_url(self, obj):
+    #     request = self.context.get('request', None)
+    #     if obj.image and request:
+    #         return request.build_absolute_uri(obj.image.url)
+    #     elif obj.image:
+    #         return obj.image.url  # fallback if request is None
+    #     return None
     
     def get_about_me(self, obj):
         user_profile = UserProfile.objects.filter(user=obj.user).first()
@@ -66,13 +79,6 @@ class AlbumSerializer(serializers.ModelSerializer):
         model = Album
         fields = ['id', 'title', 'created_at', 'images']
 
-# class ReviewerSerializer(serializers.ModelSerializer):
-#     full_name = serializers.CharField(source='profile.full_name')
-#     image = serializers.ImageField(source='profile.image', allow_null=True)
-
-#     class Meta:
-#         model = User
-#         fields = ['username', 'full_name', 'image']
 
 class ReviewerSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='profile.full_name')
@@ -85,9 +91,19 @@ class ReviewerSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         request = self.context.get('request')
         profile_image = obj.profile.image
+
         if profile_image and hasattr(profile_image, 'url'):
-            return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+            secure_url = profile_image.url.replace("http://", "https://")  # Force HTTPS
+            return request.build_absolute_uri(secure_url) if request else secure_url
+
         return None
+
+    # def get_image(self, obj):
+    #     request = self.context.get('request')
+    #     profile_image = obj.profile.image
+    #     if profile_image and hasattr(profile_image, 'url'):
+    #         return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+    #     return None
 
 
 class ReviewSerializer(serializers.ModelSerializer):

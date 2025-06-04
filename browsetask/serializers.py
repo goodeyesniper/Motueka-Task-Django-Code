@@ -24,9 +24,19 @@ class OfferSerializer(serializers.ModelSerializer):
     
     def get_profile_image(self, obj):
         request = self.context.get('request')  # Get request context
+        
         if obj.user.profile.image and hasattr(obj.user.profile.image, 'url'):
-            return request.build_absolute_uri(obj.user.profile.image.url) if request else obj.user.profile.image.url
-        return None  # Return None or a default image
+            image_url = obj.user.profile.image.url
+            secure_url = image_url.replace("http://", "https://")
+            return request.build_absolute_uri(secure_url) if request else secure_url
+        
+        return None
+    
+    # def get_profile_image(self, obj):
+    #     request = self.context.get('request')  # Get request context
+    #     if obj.user.profile.image and hasattr(obj.user.profile.image, 'url'):
+    #         return request.build_absolute_uri(obj.user.profile.image.url) if request else obj.user.profile.image.url
+    #     return None
 
 class PostSerializer(serializers.ModelSerializer):
     author_profile = serializers.SerializerMethodField()
@@ -65,13 +75,26 @@ class PostSerializer(serializers.ModelSerializer):
         except Profile.DoesNotExist:
             return None
         
+    # def get_image(self, obj):
+    #     request = self.context.get('request')
+        
+    #     if obj.image and hasattr(obj.image, 'url'):
+    #         if request:
+    #             return request.build_absolute_uri(obj.image.url)
+    #         return obj.image.url
+        
+    #     return None
+    
     def get_image(self, obj):
         request = self.context.get('request')
-        
+
         if obj.image and hasattr(obj.image, 'url'):
-            if request:  # Ensure request exists
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url  # Return relative URL if request is missing
+            image_url = obj.image.url
+            secure_url = image_url.replace("http://", "https://")
+
+            if request:
+                return request.build_absolute_uri(secure_url)
+            return secure_url
         
         return None
     
@@ -86,23 +109,46 @@ class PostSerializer(serializers.ModelSerializer):
             return obj.assigned_to.profile.full_name if obj.assigned_to else None
         except Profile.DoesNotExist:
             return str(obj.assigned_to) if obj.assigned_to else None
-    
+        
     def get_author_profile_image(self, obj):
         request = self.context.get('request')
         try:
             profile_image = obj.author.profile.image
             if profile_image and hasattr(profile_image, 'url'):
-                return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+                secure_url = profile_image.url.replace("http://", "https://")
+                return request.build_absolute_uri(secure_url) if request else secure_url
         except AttributeError:
             pass
-        return None  # Optional: replace with a default image URL if needed
+        return None
 
     def get_assigned_to_profile_image(self, obj):
         request = self.context.get('request')
         try:
             profile_image = obj.assigned_to.profile.image
             if profile_image and hasattr(profile_image, 'url'):
-                return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+                secure_url = profile_image.url.replace("http://", "https://")
+                return request.build_absolute_uri(secure_url) if request else secure_url
         except AttributeError:
             pass
         return None
+    
+    
+    # def get_author_profile_image(self, obj):
+    #     request = self.context.get('request')
+    #     try:
+    #         profile_image = obj.author.profile.image
+    #         if profile_image and hasattr(profile_image, 'url'):
+    #             return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+    #     except AttributeError:
+    #         pass
+    #     return None  # Optional: replace with a default image URL if needed
+
+    # def get_assigned_to_profile_image(self, obj):
+    #     request = self.context.get('request')
+    #     try:
+    #         profile_image = obj.assigned_to.profile.image
+    #         if profile_image and hasattr(profile_image, 'url'):
+    #             return request.build_absolute_uri(profile_image.url) if request else profile_image.url
+    #     except AttributeError:
+    #         pass
+    #     return None

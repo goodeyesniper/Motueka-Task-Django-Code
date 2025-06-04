@@ -16,17 +16,27 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             'id', 'task', 'sender', 'sender_full_name', 'sender_id',
             'sender_profile_image', 'message', 'timestamp', 'is_read'
         ]
-
+    
     def get_sender_profile_image(self, obj):
         try:
             request = self.context.get('request')
             image = obj.sender.profile.image
-            if image:
-                return request.build_absolute_uri(image.url) if request else image.url
+            if image and hasattr(image, 'url'):
+                secure_url = image.url.replace("http://", "https://")  # Force HTTPS
+                return request.build_absolute_uri(secure_url) if request else secure_url
             return None
-        except:
+        except AttributeError:  # More specific exception handling
             return None
 
+    # def get_sender_profile_image(self, obj):
+    #     try:
+    #         request = self.context.get('request')
+    #         image = obj.sender.profile.image
+    #         if image:
+    #             return request.build_absolute_uri(image.url) if request else image.url
+    #         return None
+    #     except:
+    #         return None
 
 class NotificationSerializer(serializers.ModelSerializer):
     user = serializers.CharField()
