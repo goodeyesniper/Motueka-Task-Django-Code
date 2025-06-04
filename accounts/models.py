@@ -77,7 +77,12 @@ else:
 class AlbumImage(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="images")
     # image = ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image')
-    image = CustomImageField(upload_to="portfolio_images/", blank=True, null=True)
+
+    if IS_DEVELOPMENT:
+        image = CustomImageField(upload_to="portfolio_images/", blank=True, null=True)
+    else:
+        image = CustomImageField('image', blank=True, null=True)  # No upload_to here
+    
     description = models.TextField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
