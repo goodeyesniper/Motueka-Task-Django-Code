@@ -72,9 +72,35 @@ class UserProfileSerializer(serializers.ModelSerializer):
 #         model = AlbumImage
 #         fields = ['id', 'image', 'description', 'uploaded_at']
 
-import os
+# import os
 
-IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
+# IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
+
+# class AlbumImageSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = AlbumImage
+#         fields = ['id', 'image', 'description', 'uploaded_at']
+
+#     def to_representation(self, instance):
+#         rep = super().to_representation(instance)
+#         image_url = rep.get('image')
+
+#         if image_url:
+#             # In production, make sure the URL is HTTPS
+#             if not IS_DEVELOPMENT and image_url.startswith("http://"):
+#                 image_url = image_url.replace("http://", "https://")
+#                 rep['image'] = image_url
+
+#             # In development, make sure it's fully qualified
+#             elif IS_DEVELOPMENT:
+#                 request = self.context.get('request')
+#                 if request and image_url.startswith('/'):
+#                     image_url = request.build_absolute_uri(image_url)
+#                     rep['image'] = image_url
+
+#         return rep
+
+import os
 
 class AlbumImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -85,18 +111,21 @@ class AlbumImageSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         image_url = rep.get('image')
 
-        if image_url:
-            # In production, make sure the URL is HTTPS
-            if not IS_DEVELOPMENT and image_url.startswith("http://"):
-                image_url = image_url.replace("http://", "https://")
-                rep['image'] = image_url
+        cloudinary_base = f"https://res.cloudinary.com/{os.getenv('CLOUDINARY_CLOUD_NAME')}"
 
-            # In development, make sure it's fully qualified
-            elif IS_DEVELOPMENT:
-                request = self.context.get('request')
-                if request and image_url.startswith('/'):
-                    image_url = request.build_absolute_uri(image_url)
-                    rep['image'] = image_url
+        if image_url:
+            if not image_url.startswith("http"):
+                if os.getenv('DJANGO_ENV') == 'development':
+                    request = self.context.get('request')
+                    if request:
+                        image_url = request.build_absolute_uri(image_url)
+                else:
+                    image_url = cloudinary_base + image_url
+
+            if os.getenv('DJANGO_ENV') != 'development' and image_url.startswith("http://"):
+                image_url = image_url.replace("http://", "https://")
+
+            rep['image'] = image_url
 
         return rep
 
