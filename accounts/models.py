@@ -5,8 +5,8 @@ from django.dispatch import receiver
 from django.utils.timezone import now
 from sorl.thumbnail import ImageField
 from cloudinary.models import CloudinaryField
-
 import os
+
 
 IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
 
@@ -67,9 +67,10 @@ class Album(models.Model):
 
     def __str__(self):
         return self.title
-    
-    
-# Import the correct field types first
+
+
+USE_CLOUDINARY = not IS_DEVELOPMENT or os.environ.get("FORCE_CLOUDINARY") == "true"
+
 if IS_DEVELOPMENT:
     from django.db.models import ImageField
 else:
@@ -78,7 +79,10 @@ else:
 # For local host use this
 class AlbumImage(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name="images")
-    image = ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image')
+    # image = ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image')
+    
+    image = ImageField(upload_to="portfolio_images/") if IS_DEVELOPMENT else CloudinaryField('image') if USE_CLOUDINARY else ImageField(upload_to="portfolio_images/")
+
     description = models.TextField(blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 

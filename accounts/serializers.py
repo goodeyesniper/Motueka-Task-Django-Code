@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Album, AlbumImage, Profile, UserProfile, Review
 from django.contrib.auth.models import User
+import os
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -72,8 +73,32 @@ class UserProfileSerializer(serializers.ModelSerializer):
 #         model = AlbumImage
 #         fields = ['id', 'image', 'description', 'uploaded_at']
 
+# class AlbumImageSerializer(serializers.ModelSerializer):
+#     image = serializers.SerializerMethodField()  # Keep the field name as 'image'
+
+#     class Meta:
+#         model = AlbumImage
+#         fields = ['id', 'image', 'description', 'uploaded_at']
+
+#     def get_image(self, obj):
+#         request = self.context.get('request', None)
+
+#         if obj.image and hasattr(obj.image, 'url'):
+#             image_url = obj.image.url.replace("http://", "https://")  # Force HTTPS
+
+#             if request:
+#                 return request.build_absolute_uri(image_url)
+#             elif image_url:
+#                 return image_url
+
+#         return None
+
+import logging
+logger = logging.getLogger(__name__)
+IS_DEVELOPMENT = os.environ.get("DJANGO_ENV") == "development"
+
 class AlbumImageSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()  # Keep the field name as 'image'
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = AlbumImage
@@ -82,13 +107,12 @@ class AlbumImageSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         request = self.context.get('request', None)
 
-        if obj.image and hasattr(obj.image, 'url'):
-            image_url = obj.image.url.replace("http://", "https://")  # Force HTTPS
+        logger.info(f"DEBUG: IS_DEVELOPMENT={IS_DEVELOPMENT}")
+        logger.info(f"DEBUG: AlbumImage URL={obj.image.url if obj.image else 'No Image Found'}")
 
-            if request:
-                return request.build_absolute_uri(image_url)
-            elif image_url:
-                return image_url
+        if obj.image and hasattr(obj.image, 'url'):
+            secure_url = obj.image.url.replace("http://", "https://")  # Force HTTPS
+            return request.build_absolute_uri(secure_url) if request else secure_url
 
         return None
 
