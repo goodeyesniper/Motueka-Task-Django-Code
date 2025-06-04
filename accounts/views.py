@@ -295,6 +295,11 @@ class AlbumViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
 class AlbumImageViewSet(viewsets.ModelViewSet):
     serializer_class = AlbumImageSerializer
     parser_classes = [MultiPartParser, FormParser]
@@ -313,6 +318,7 @@ class AlbumImageViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        logger.info("Environment is development: %s", os.environ.get("DJANGO_ENV") == "development")
         album_id = self.request.data.get('album')
         album = Album.objects.get(id=album_id, user=self.request.user)
         serializer.save(album=album)
