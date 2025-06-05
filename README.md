@@ -1,3 +1,1 @@
-## Project Inspiration
-
-### This project was inspired by a desire to support our small town and community — especially the elderly who live alone. I noticed that many of our neighbors are seniors who often struggle with day-to-day tasks at home. This led me to an idea: why not create a platform where they can go online to request help? In return, they could offer a small payment as compensation. It’s a way for people to receive the help they need, while also providing an opportunity for others to earn a little money in the process.
+### Deployed Version: https://motueka-task-reactjs-code.onrender.com/
